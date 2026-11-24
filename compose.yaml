@@ -1,0 +1,75 @@
+# Home Assistant + Mosquitto + Zigbee2MQTT für macOS (Docker Desktop oder OrbStack)
+# Zigbee-Koordinator: SONOFF Dongle Max (PoE/LAN, EFR32MG24) über TCP – kein USB-Passthrough nötig.
+
+name: smarthome
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    # Unter macOS läuft Docker in einer VM, "network_mode: host" bringt daher nicht
+    # die volle LAN-Sichtbarkeit wie unter Linux. Wir nutzen Port-Mapping.
+    ports:
+      - "8123:8123"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ./homeassistant/config:/config
+    depends_on:
+      - mosquitto
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"   # optional: MQTT auch für andere Geräte im LAN erreichbar (mit Login)
+    environment:
+      TZ: ${TZ}
+      MQTT_USER: ${MQTT_USER}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+    # Erzeugt bei jedem Start die Passwortdatei aus den Werten in .env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mosquitto_passwd -c -b /mosquitto/data/passwd "$$MQTT_USER" "$$MQTT_PASSWORD" &&
+        chown mosquitto:mosquitto /mosquitto/data/passwd &&
+        chmod 0700 /mosquitto/data/passwd &&
+        exec /docker-entrypoint.sh /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u \"$$MQTT_USER\" -P \"$$MQTT_PASSWORD\" -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  zigbee2mqtt:
+    image: ghcr.io/koenkk/zigbee2mqtt:latest
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    ports:
+      - "8124:8124"   # Zigbee2MQTT Web-Oberfläche
+    environment:
+      TZ: ${TZ}
+      # Startet Z2M bei Verbindungsabbrüchen zum Netzwerk-Stick automatisch neu
+      Z2M_WATCHDOG: default
+      # Diese Werte überschreiben zigbee2mqtt/data/configuration.yaml
+      ZIGBEE2MQTT_CONFIG_SERIAL_PORT: tcp://${ZIGBEE_DONGLE_IP}:${ZIGBEE_DONGLE_PORT}
+      ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: ember
+      ZIGBEE2MQTT_CONFIG_MQTT_SERVER: mqtt://mosquitto:1883
+      ZIGBEE2MQTT_CONFIG_MQTT_USER: ${MQTT_USER}
+      ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD: ${MQTT_PASSWORD}
+    volumes:
+      - ./zigbee2mqtt/data:/app/data
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:

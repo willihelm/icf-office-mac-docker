@@ -1,0 +1,25 @@
+# Basis-Konfiguration für Zigbee2MQTT (v2.x).
+# serial.port, mqtt.server, mqtt.user und mqtt.password kommen aus compose.yaml / .env.
+# Beim ersten Start ersetzt Z2M die "GENERATE"-Werte durch zufällige Schlüssel –
+# diese Datei danach SICHERN, sonst müssen alle Geräte neu angelernt werden.
+version: 4
+
+homeassistant:
+  enabled: true
+
+frontend:
+  enabled: true
+  port: 8124
+
+mqtt:
+  base_topic: zigbee2mqtt
+
+serial:
+  adapter: ember
+
+advanced:
+  log_level: info
+  channel: 25          # 15, 20 oder 25 kollidieren am wenigsten mit WLAN
+  network_key: GENERATE
+  pan_id: GENERATE
+  ext_pan_id: GENERATE
