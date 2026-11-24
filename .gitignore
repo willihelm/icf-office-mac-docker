@@ -1,5 +1,6 @@
 .env
 homeassistant/config/*
 !homeassistant/config/.gitkeep
+# Laufzeitdaten inkl. configuration.yaml mit Zigbee-Netzwerkschlüssel – nie committen
 zigbee2mqtt/data/*
-!zigbee2mqtt/data/configuration.yaml
+!zigbee2mqtt/data/.gitkeep

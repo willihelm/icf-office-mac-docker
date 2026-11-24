@@ -48,6 +48,17 @@ services:
       retries: 3
       start_period: 10s
 
+  # Legt beim ersten Start data/configuration.yaml aus der Vorlage an.
+  # Eine bestehende Datei (mit Netzwerkschlüssel) wird nie überschrieben.
+  zigbee2mqtt-init:
+    image: busybox:1.37
+    container_name: zigbee2mqtt-init
+    restart: "no"
+    command: ["sh", "-c", "[ -f /data/configuration.yaml ] || cp /template/configuration.yaml /data/configuration.yaml"]
+    volumes:
+      - ./zigbee2mqtt/configuration.template.yaml:/template/configuration.yaml:ro
+      - ./zigbee2mqtt/data:/data
+
   zigbee2mqtt:
     image: ghcr.io/koenkk/zigbee2mqtt:latest
     container_name: zigbee2mqtt
@@ -67,6 +78,8 @@ services:
     volumes:
       - ./zigbee2mqtt/data:/app/data
     depends_on:
+      zigbee2mqtt-init:
+        condition: service_completed_successfully
       mosquitto:
         condition: service_healthy
 

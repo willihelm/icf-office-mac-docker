@@ -1,7 +1,9 @@
-# Basis-Konfiguration für Zigbee2MQTT (v2.x).
+# VORLAGE für Zigbee2MQTT (v2.x) – wird beim ersten Start von "zigbee2mqtt-init"
+# nach zigbee2mqtt/data/configuration.yaml kopiert (nur wenn dort noch keine existiert).
+# Änderungen an dieser Vorlage wirken sich danach nicht mehr aus.
 # serial.port, mqtt.server, mqtt.user und mqtt.password kommen aus compose.yaml / .env.
 # Beim ersten Start ersetzt Z2M die "GENERATE"-Werte durch zufällige Schlüssel –
-# diese Datei danach SICHERN, sonst müssen alle Geräte neu angelernt werden.
+# data/configuration.yaml danach SICHERN (nicht committen!), sonst müssen alle Geräte neu angelernt werden.
 version: 4
 
 homeassistant:
